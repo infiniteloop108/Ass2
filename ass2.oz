@@ -1,3 +1,5 @@
+\include 'SingleAssignmentStore.oz'
+
 declare
 Env={Dictionary.new}
 
@@ -10,6 +12,10 @@ fun {GetID}
    @TotVar
 end
 
+declare
+fun {EnvMap Env X}
+   {Dictionary.get Env X}
+end
 
 declare
 proc {Run S E}
@@ -28,6 +34,11 @@ proc {Run S E}
 	 NE={Dictionary.clone E}
 	 {Dictionary.put NE X {GetID}}
 	 {Run S NE}
+      end
+   [] [bind ident(x) ident(y)] then
+      if {Dictionary.member E x}==false then {Browse 'Variable not declared'}
+      elseif {Dictionary.member E y}==false then {Browse 'Variable not declared'}
+      else {UnifySAS {EnvMap E y} {EnvMap E y}}
       end
    else
       %It is a sequence of statements
