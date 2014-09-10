@@ -135,12 +135,29 @@ proc {Run S E}
 	 {BindAdd {Dictionary.get NE X}}
 	 {Run S NE}
       end
+   [] [bind ident(X) V] then
+      if {Dictionary.member E X}==false then {Browse 'Variable not declared'}
+      else {Bindval {EnvMap E X} V} end    
    [] [bind ident(X) ident(Y)] then
       % error if variable x or y is not declared
       if {Dictionary.member E X}==false then {Browse 'Variable not declared'}
       elseif {Dictionary.member E Y}==false then {Browse 'Variable not declared'}
       % otherwise unify the two in SAS
-      else {UnifySAS {EnvMap E X} {EnvMap E Y}}
+      else
+	 {Browse {EnvMap E X}}
+	 {Browse {EnvMap E Y}}
+	 {UnifySAS {EnvMap E X} {EnvMap E Y}}
+      end
+    [] [conditional ident(X) S1 S2] then
+      if {Dictionary.member E X}==false then {Browse 'Condition variable not declared'}
+      else local XSAS in
+	 XSAS = {RetrievefromSAS {EnvMap E X}}
+	 case XSAS
+	 of unBOUND then {Browse 'Variable unbound'}
+	 else if XSAS then {Run S1 E}
+	      else {Run S2 E} end
+	 end
+	   end
       end
    else
       %It is a sequence of statements
@@ -150,6 +167,9 @@ proc {Run S E}
       end
    end
 end
+
+
+{Run [localvar ident(x) [conditional ident(x) [nop] [nop]]] Env}
 
 {Run [localvar ident(x) [ [localvar ident(x) [  [localvar ident(x) [nop]] [nop] [nop] ] ] [nop]  [nop]] ] Env}
 
