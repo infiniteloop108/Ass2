@@ -1,20 +1,24 @@
+%=============================================================================================
+%Starting SAS
 %SAS is a dictionary which maps environment variables to a 2-element list.
 %1st element of that list contains the parent (in the Disjoint Set Data Structure). 2nd elemet signifies whether it is bound or unbound
 %To see the status of a variable you have to look at its root.
 
-%==============================
-% declaring dictionary for SAS
+%=============================================================================================
+%Declare dictionary for SAS
+
 declare
 SAS = {Dictionary.new}
 
-%===============================
-% Add a new value in SAS
+%=============================================================================================
+% Add a new value to SAS
+
 declare
-proc {BindAdd X}
+proc {SASAdd X}
    {Dictionary.put SAS X [X unBOUND]}
 end
 
-%===============================
+%=============================================================================================
 % Function for getting parent node in equivalence class
 
 declare
@@ -27,7 +31,7 @@ fun {RetrieveNodeSAS Exp1}
    end
 end
 
-%==============================
+%=============================================================================================
 % function for getting value of a variable
 
 declare
@@ -38,12 +42,29 @@ fun {RetrievefromSAS Exp1}
    end
 end
 
-%================================
+%=============================================================================================
+% Binding a variable
+
+declare
+proc {Bindval Exp Val}
+   local NodeX in
+      NodeX={RetrieveNodeSAS Exp}
+      {Browse NodeX.2.1}
+      case NodeX.2.1
+      of unBOUND then {Dictionary.put SAS NodeX.1 [NodeX.1 Val]} {Browse hi}
+      else case NodeX.2.1==Val
+	   of true then skip
+	   [] false then {Browse 'Illegal assignment'}
+	   end
+      end
+   end
+end
+
+%=============================================================================================
 % Unifying two variables
 
 declare
 proc {UnifySAS Exp1 Exp2}
-
    {Browse {Dictionary.entries SAS}}
    local NodeX NodeY in
       NodeX = {RetrieveNodeSAS Exp1}
@@ -65,31 +86,9 @@ proc {UnifySAS Exp1 Exp2}
    end
 end
 
-%===============================
-% Binding a variable
+%SAS ends here
+%=============================================================================================
 
-declare
-proc {Bindval Exp Val}
-   local NodeX in
-      NodeX={RetrieveNodeSAS Exp}
-      {Browse NodeX.2.1}
-      case NodeX.2.1
-      of unBOUND then {Dictionary.put SAS NodeX.1 [NodeX.1 Val]} {Browse hi}
-      else case NodeX.2.1==Val
-	   of true then skip
-	   [] false then {Browse 'Illegal assignment'}
-	   end
-      end
-   end
-end
-
-
-%===========================
-% Reset SAS
-%
-%{Dictionary.reset SAS}
-
-%===========================
 %{BindAdd 1}
 %{BindAdd 2}
 %{BindAdd 3}
@@ -100,5 +99,5 @@ end
 %{Browse {RetrievefromSAS 3}}
 %{Browse {Dictionary.entries SAS}}
 %{Browse hello}
-%=============================
-%SAS finished
+%=============================================================================================
+
