@@ -11,7 +11,7 @@ declare
 SAS = {Dictionary.new}
 
 %=============================================================================================
-% Add a new value to SAS
+%Add a new value to SAS
 
 declare
 proc {SASAdd X}
@@ -19,69 +19,68 @@ proc {SASAdd X}
 end
 
 %=============================================================================================
-% Function for getting parent node in equivalence class
+%Function for getting parent node in equivalence class
 
 declare
-fun {RetrieveNodeSAS Exp1}
+fun {RetrieveNodeSAS Var}
    local Node in
-      Node={Dictionary.get SAS Exp1}
-      if Node.1==Exp1 then Node
-      else {RetrieveNodeSAS Node.1}
+      Node={Dictionary.get SAS Var}
+      if Node.1==Var then Node
+      else
+	 %Path Compression
+	 {Dictionary.put SAS Var {RetrieveNodeSAS Node.1}}
+	 {Dictionary.get SAS Var}
       end
    end
 end
 
 %=============================================================================================
-% function for getting value of a variable
+%Function for getting value of a variable
 
 declare
-fun {RetrievefromSAS Exp1}
+fun {GetValFromSAS Var}
    local Node in
-      Node={RetrieveNodeSAS Exp1}
+      Node={RetrieveNodeSAS Var}
+      %Second element of the list
       Node.2.1
    end
 end
 
 %=============================================================================================
-% Binding a variable
+%Binding a variable to a value
 
 declare
-proc {Bindval Exp Val}
-   local NodeX in
-      NodeX={RetrieveNodeSAS Exp}
-      {Browse NodeX.2.1}
-      case NodeX.2.1
-      of unBOUND then {Dictionary.put SAS NodeX.1 [NodeX.1 Val]} {Browse hi}
-      else case NodeX.2.1==Val
-	   of true then skip
-	   [] false then {Browse 'Illegal assignment'}
-	   end
+proc {BindVal Var Val}
+   local Node in
+      Node={RetrieveNodeSAS Var}
+      case Node.2.1
+      of unBOUND then {Dictionary.put SAS Node.1 [Node.1 Val]}
+      else
+	 if Node.2.1==Val then skip
+	 else raise illass(Var) end
+	 end
       end
    end
 end
 
 %=============================================================================================
-% Unifying two variables
+%Unifying two variables
 
 declare
-proc {UnifySAS Exp1 Exp2}
-   {Browse {Dictionary.entries SAS}}
+proc {UnifySAS Var1 Var2}
    local NodeX NodeY in
-      NodeX = {RetrieveNodeSAS Exp1}
-      NodeY = {RetrieveNodeSAS Exp2}
-      case NodeX.2.1
-      of unBOUND then
-	 {Dictionary.put SAS NodeX.1 [NodeY.1 unBOUND]}
-      else case NodeY.2.1
-	   of unBOUND then {Dictionary.put SAS NodeY.1 [NodeX.1 unBOUND]}
-	   else case NodeX.2.1 == NodeY.2.1
-		of true then
-		   {Dictionary.put SAS NodeX.1 [NodeY.1 unBOUND]}
-		   {Dictionary.put SAS NodeY.1 [NodeY.1 NodeY.2.1]}
-		[] false then
-		   {Browse "Illegal assignment"}
-		end
-	   end
+      NodeX = {RetrieveNodeSAS Var1}
+      NodeY = {RetrieveNodeSAS Var2}
+      if NodeX.2.1==unBOUND then {Dictionary.put SAS NodeX.1 [NodeY.1 unBOUND]}
+      else
+	 if NodeY.2.1 == unBOUND then {Dictionary.put SAS NodeY.1 [NodeX.1 unBOUND]}
+	 else
+	    if NodeX.2.1 == NodeY.2.1 then
+	       skip
+	    else
+	       raise illasseq(Var1 Var2) end
+	    end
+	 end
       end
    end
 end
@@ -89,15 +88,16 @@ end
 %SAS ends here
 %=============================================================================================
 
-%{BindAdd 1}
-%{BindAdd 2}
-%{BindAdd 3}
-%{Browse {RetrieveNodeSAS 1}}
-%{Browse {Dictionary.entries SAS}}
-%{UnifySAS 3 1}
-%{Bindval 1 3}
-%{Browse {RetrievefromSAS 3}}
-%{Browse {Dictionary.entries SAS}}
-%{Browse hello}
+{SASAdd 1}
+{SASAdd 2}
+{SASAdd 3}
+{Browse {RetrieveNodeSAS 1}}
+{Browse {Dictionary.entries SAS}}
+{UnifySAS 3 1}
+{BindVal 1 3}
+{Browse {GetValFromSAS 3}}
+{Browse {Dictionary.entries SAS}}
+{Browse {GetValFromSAS 1}}
+
 %=============================================================================================
 

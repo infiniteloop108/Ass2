@@ -1,4 +1,4 @@
-\insert 'sas.oz'
+
 
 %=============================================================================================
 %For generating environment variables
@@ -70,16 +70,16 @@ proc {Interpret S}
 	       {Run S NE}
 	    end
 	 [] [bind ident(X) ident(Y)] then
-            % Unify the two in the SAS
+            %Unify the two in the SAS
 	    {UnifySAS {EnvMap E X} {EnvMap E Y}}
 	 [] [bind ident(X) V] then
-	    {Bindval {EnvMap E X} {ValMap E V}}    
+	    %Bind the value to X
+	    {BindVal {EnvMap E X} {ValMap E V}}    
 	 [] [conditional ident(X) S1 S2] then
 	    local XSAS in
-	       XSAS = {RetrievefromSAS {EnvMap E X}}
+	       XSAS = {GetValFromSAS {EnvMap E X}}
        	       %To clarify
-	       case XSAS
-	       of unBOUND then raise unbnd(X) end
+	       if XSAS==unBOUND then raise unbnd(X) end
 	       else
 		  if XSAS then {Run S1 E}
 		  else {Run S2 E} end
@@ -102,7 +102,7 @@ end
 %Try Programs
 
 try
-   {Interpret [localvar ident(x) [conditional ident(x) [nop] [nop]]]}
+   {Interpret [localvar ident(x) [ [nop] [conditional ident(x) [nop] [nop]] ]]}
    %{Interpret [localvar ident(x) [ [localvar ident(x) [  [localvar ident(x) [nop]] [nop] [nop] ] ] [nop]  [nop]] ]}
    %{Interpret [localvar ident(x) [ [localvar ident(y) [  [localvar ident(x) [bind ident(x) [record literal(a) [ [literal(f1) ident(x)] [literal(f2) ident(y)] ]] ]] [nop] [nop] [bind ident(x) [record literal(a) [ [literal(f1) ident(x)] [literal(f2) ident(y)] ]] ] ] ] [nop]  [nop]  ] ]}
    %{Interpret [localvar ident(x) [localvar ident(y) [bind ident(x) ident(y)]]]}
@@ -111,7 +111,8 @@ catch Err then
    case Err
    of stmerr(X) then {Browse X} {Browse 'Above is not a statement. Error!!'}
    [] varndec(X) then {Browse X} {Browse 'Above identifier has not been declared. Error!!'}
-   [] unbnd(X) then {Browse X} {Browse 'Above variable was unbound at time of usage.'} %We do not have paraller programming for now, hence an error. 
+   [] unbnd(X) then {Browse X} {Browse 'Above variable was unbound at time of usage.'} %We do not have paraller programming for now, hence an error.
+   [] illass(X) then {Browse X} {Browse 'Illegal Assignment to an already bound variable'} %X is the environment variable
    else {Browse 'Unidentified Exception!!'}
    end
 finally
