@@ -1,4 +1,4 @@
-\include 'SingleAssignmentStore.oz'
+\insert 'SingleAssignmentStore.oz'
 
 declare
 Env={Dictionary.new}
@@ -36,8 +36,10 @@ proc {Run S E}
 	 {Run S NE}
       end
    [] [bind ident(x) ident(y)] then
+      % error if variable x or y is not declared
       if {Dictionary.member E x}==false then {Browse 'Variable not declared'}
       elseif {Dictionary.member E y}==false then {Browse 'Variable not declared'}
+      % otherwise unify the two in SAS
       else {UnifySAS {EnvMap E y} {EnvMap E y}}
       end
    else

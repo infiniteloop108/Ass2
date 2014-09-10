@@ -1,12 +1,17 @@
-{Browse _}
-
+%==============================
+% declaring dictionary for SAS
 declare
 SAS = {Dictionary.new}
 
+%===============================
+% Add a new value in SAS
 declare
 proc {BindAdd X}
    {Dictionary.put SAS X [X unBOUND]}
 end
+
+%===============================
+% Function for getting parent node in equivalence class
 
 declare
 fun {RetrieveNodeSAS Exp1}
@@ -18,6 +23,9 @@ fun {RetrieveNodeSAS Exp1}
    end
 end
 
+%==============================
+% function for getting value of a variable
+
 declare
 fun {RetrievefromSAS Exp1}
    local Node in
@@ -25,6 +33,9 @@ fun {RetrievefromSAS Exp1}
       Node.2.1
    end
 end
+
+%================================
+% Unifying two variables
 
 declare
 proc {UnifySAS Exp1 Exp2}
@@ -50,6 +61,9 @@ proc {UnifySAS Exp1 Exp2}
    end
 end
 
+%===============================
+% Binding a variable
+
 declare
 proc {Bindval Exp Val}
    local NodeX in
@@ -65,17 +79,21 @@ proc {Bindval Exp Val}
    end
 end
 
-{Dictionary.reset SAS}
+%===========================
+% Reset SAS
+%
+%{Dictionary.reset SAS}
 
-{BindAdd 1}
-{BindAdd 2}
-{BindAdd 3}
+%===========================
+%{BindAdd 1}
+%{BindAdd 2}
+%{BindAdd 3}
 
-{Browse {RetrieveNodeSAS 1}}
+%{Browse {RetrieveNodeSAS 1}}
 
-{Browse {Dictionary.entries SAS}}
+%{Browse {Dictionary.entries SAS}}
 
-{UnifySAS 3 1}
-{Bindval 1 3}
-{Browse {RetrievefromSAS 3}}
-{Browse {Dictionary.entries SAS}}
+%{UnifySAS 3 1}
+%{Bindval 1 3}
+%{Browse {RetrievefromSAS 3}}
+%{Browse {Dictionary.entries SAS}}
