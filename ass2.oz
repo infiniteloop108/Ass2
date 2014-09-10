@@ -33,6 +33,7 @@ proc {Run S E}
       local NE in
 	 NE={Dictionary.clone E}
 	 {Dictionary.put NE X {GetID}}
+	 {BindAdd {Dictionary.get NE X}}
 	 {Run S NE}
       end
    [] [bind ident(x) ident(y)] then
@@ -41,6 +42,17 @@ proc {Run S E}
       elseif {Dictionary.member E y}==false then {Browse 'Variable not declared'}
       % otherwise unify the two in SAS
       else {UnifySAS {EnvMap E y} {EnvMap E y}} end
+   [] [conditional ident(X) S1 S2] then
+      if {Dictionary.member E X}==false then {Browse 'Condition variable not declared'}
+      else local XSAS in
+	 XSAS = {RetrievefromSAS {EnvMap E X}}
+	 case XSAS
+	 of unBOUND then {Browse 'Variable unbound'}
+	 else if XSAS then {Run S1 E}
+	      else {Run S2 E} end
+	 end
+	   end
+      end
    else
       %It is a sequence of statements
       {Run S.1 E}
