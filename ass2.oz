@@ -40,8 +40,7 @@ proc {Run S E}
       if {Dictionary.member E x}==false then {Browse 'Variable not declared'}
       elseif {Dictionary.member E y}==false then {Browse 'Variable not declared'}
       % otherwise unify the two in SAS
-      else {UnifySAS {EnvMap E y} {EnvMap E y}}
-      end
+      else {UnifySAS {EnvMap E y} {EnvMap E y}} end
    else
       %It is a sequence of statements
       {Run S.1 E}
