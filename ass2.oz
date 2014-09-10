@@ -42,6 +42,9 @@ proc {Run S E}
       elseif {Dictionary.member E y}==false then {Browse 'Variable not declared'}
       % otherwise unify the two in SAS
       else {UnifySAS {EnvMap E y} {EnvMap E y}} end
+   [] [bind ident(X) V] then
+      if {Dictionary.member E X}==false then {Browse 'Variable not declared'}
+      else {Bindval {EnvMap E X} V} end
    [] [conditional ident(X) S1 S2] then
       if {Dictionary.member E X}==false then {Browse 'Condition variable not declared'}
       else local XSAS in
