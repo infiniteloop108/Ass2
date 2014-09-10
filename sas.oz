@@ -47,6 +47,30 @@ fun {GetValFromSAS Var}
 end
 
 %=============================================================================================
+%Return Record with features in sorted order
+
+declare
+fun {SortRecord R}
+   R
+end
+
+%=============================================================================================
+%Check if records are compatible
+
+declare
+fun {RecComp R1 R2}
+   true
+end
+
+%=============================================================================================
+%Check if two values are equal
+
+declare
+fun {CompareVal V1 V2}
+   true
+end
+
+%=============================================================================================
 %Binding a variable to a value
 
 declare
@@ -56,8 +80,8 @@ proc {BindVal Var Val}
       case Node.2.1
       of unBOUND then {Dictionary.put SAS Node.1 [Node.1 Val]}
       else
-	 if Node.2.1==Val then skip
-	 else raise illass(Var) end
+	 if {CompareVal Node.2.1 Val}==true then skip
+	 else raise illass(Var Val) end
 	 end
       end
    end
@@ -75,10 +99,8 @@ proc {UnifySAS Var1 Var2}
       else
 	 if NodeY.2.1 == unBOUND then {Dictionary.put SAS NodeY.1 [NodeX.1 unBOUND]}
 	 else
-	    if NodeX.2.1 == NodeY.2.1 then
-	       skip
-	    else
-	       raise illasseq(Var1 Var2) end
+	    if {CompareVal NodeX.2.1 NodeY.2.1} then skip
+	    else raise illasseq(Var1 Var2) end
 	    end
 	 end
       end

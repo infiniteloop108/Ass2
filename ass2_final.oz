@@ -112,7 +112,7 @@ catch Err then
    of stmerr(X) then {Browse X} {Browse 'Above is not a statement. Error!!'}
    [] varndec(X) then {Browse X} {Browse 'Above identifier has not been declared. Error!!'}
    [] unbnd(X) then {Browse X} {Browse 'Above variable was unbound at time of usage.'} %We do not have paraller programming for now, hence an error.
-   [] illass(X) then {Browse X} {Browse 'Illegal Assignment to an already bound variable'} %X is the environment variable
+   [] illass(X Y) then {Browse X} {Browse Y} {Browse 'Illegal Assignment to an already bound variable'} %X is the environment variable
    else {Browse 'Unidentified Exception!!'}
    end
 finally
