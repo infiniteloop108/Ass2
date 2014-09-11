@@ -182,8 +182,6 @@ declare
 proc {UnifySAS Exp1 Exp2}
    local UnifySASAux in
       proc {UnifySASAux Exp1 Exp2 UnifSoFar}
-	%{Browse Exp1}
-	 %{Browse Exp2}
 	 %If we have already unified these expressions then skip
 	 if {List.member [Exp1 Exp2] UnifSoFar} then skip
 	 else
@@ -383,25 +381,25 @@ try
    %{Interpret [localvar ident(x) [ [localvar ident(x) [  [localvar ident(x) [nop]] [nop] [nop] ] ] [nop]  [nop]] ]}
    {Interpret [
 	       localvar ident(x) [
-				  
 				  [
 				   localvar ident(y) [
-
 						      [
-						       localvar ident(x) [
-									  [bind ident(x) [record literal(a) [ [literal(f1) literal(10)] [literal(f2) ident(y)] ] ]]
+						       localvar ident(z) [
+									  [bind ident(x) [record literal(a) [ [literal(f2) ident(x)] [literal(f1) ident(y)] ] ]]
+									  [bind ident(y) literal(30)]
+									  [bind ident(x) [record literal(a) [ [literal(f1) literal(30)] [literal(f2) ident(x)] ] ]]
+									  [bind ident(x) [record literal(a) [ [literal(f1) literal(30)] [literal(f2) ident(z)] ] ]]
+									  [bind ident(x) ident(z)]	  
 									 ]
 						      ]
 						      [nop]
 						      [nop]
 						      [nop]
-						      [bind ident(x) [record literal(a) [ [literal(f1) literal(10)] [literal(f2) ident(y)] ] ]]
 						     ]
 				  ]
 				  [nop]
 				  [nop]
 				 ]
-
 	      ]
    }
    %{Interpret [localvar ident(x) [localvar ident(y) [bind ident(x) ident(y)]]]}
@@ -412,7 +410,7 @@ catch Err then
    [] varndec(X) then {Browse X} {Browse 'Above identifier has not been declared.'}
    [] unbnd(X) then {Browse X} {Browse 'Above variable was unbound at time of usage. Hanging!'} local Hang in  proc {Hang}  {Hang} end  {Hang} end %We do not have paraller programming for now, hence we hang.
    [] typemis(X Y) then {Browse X} {Browse Y} {Browse 'Illegal Unification of the above two values. Type mismatch'}
-   [] illass(X Y) then {Browse X} {Browse Y} {Browse 'Illegal Unification of the above two variables. Unequal Values'}
+   [] illass(X Y) then {Browse X} {Browse Y} {Browse 'Illegal Unification of the above two values. Unequal Values'}
    [] procmis(X Y) then {Browse X} {Browse Y} {Browse 'Illegal unification of two procedures!'}
    [] illegalRecord(Pairs) then {Browse Pairs} {Browse 'Illegal Record Value' }
    else {Browse 'Unidentified Exception!!'}
