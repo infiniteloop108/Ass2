@@ -182,6 +182,8 @@ declare
 proc {UnifySAS Exp1 Exp2}
    local UnifySASAux in
       proc {UnifySASAux Exp1 Exp2 UnifSoFar}
+	%{Browse Exp1}
+	 %{Browse Exp2}
 	 %If we have already unified these expressions then skip
 	 if {List.member [Exp1 Exp2] UnifSoFar} then skip
 	 else
@@ -293,21 +295,23 @@ end
 %Function to return the environment variable for the identifier.
 
 declare
-fun {EnvMap Env X}
+fun {EnvMap X Env}
    %If it is not yet defined, then raise an exception
-   if {Dictionary.member Env X}==false then raise varndec(X) end end
-   %Return the mapped environment variable
-   {Dictionary.get Env X}
+   if {Dictionary.member Env X}==false then raise varndec(X) end
+   else
+      %Return the mapped environment variable
+      {Dictionary.get Env X}
+   end
 end
 
 %=============================================================================================
 %Function to map an expression with identifiers with environment variables.
 
 declare
-fun {IdenMap Env V}
+fun {IdenMap V Env}
    case V
-   of H|T then {IdenMap Env H}|{IdenMap Env T}
-   [] ident(X) then ident({EnvMap Env X})
+   of H|T then {IdenMap H Env}|{IdenMap T Env}
+   [] ident(X) then ident({EnvMap X Env})
    else V
    end
 end
@@ -329,7 +333,7 @@ proc {Interpret S}
    local Env Run in
       proc {Run S E}
 	 %{Browse S}
-	 {Browse {Dictionary.entries E}}
+	 %{Browse {Dictionary.entries E}}
          %If S is not a list, then there is a syntax error 
 	 case S
 	 of X|Y then skip
@@ -348,16 +352,16 @@ proc {Interpret S}
 	 [] [bind X Y] then
             %Unify the two expressions in the SAS
 	    {UnifySAS {IdenMap X E} {IdenMap Y E}}   
-	 %[] [conditional ident(X) S1 S2] then
-	  %  local XSAS in
-	   %    XSAS = {GetValFromSAS {EnvMap E X}}
-       	   %    %To clarify
-	    %   if XSAS==unBOUND then raise unbnd(X) end
-	    %   else
-	%	  if XSAS then {Run S1 E}
-	%	  else {Run S2 E} end
-	 %      end
-	  %  end
+	 [] [conditional ident(X) S1 S2] then
+	    local XSAS in
+	       XSAS = {GetValFromSAS {EnvMap E X}}
+       	       %To clarify
+	       if XSAS==unBOUND then raise unbnd(X) end
+	       else
+		  if XSAS then {Run S1 E}
+		  else {Run S2 E} end
+	       end
+	    end
 	 else
             %It is a sequence of statements
 	    {Run S.1 E}
@@ -383,13 +387,15 @@ try
 				  [
 				   localvar ident(y) [
 
-						      [localvar ident(x) [
-									  bind ident(x) [record literal(a) [ [literal(f1) literal(10)] [literal(f2) ident(y)] ] ]
+						      [
+						       localvar ident(x) [
+									  [bind ident(x) [record literal(a) [ [literal(f1) literal(10)] [literal(f2) ident(y)] ] ]]
 									 ]
 						      ]
 						      [nop]
 						      [nop]
-						      [bind ident(x) [record literal(a) [ [literal(f1) literal(10)] [literal(f2) ident(y)] ] ] ]
+						      [nop]
+						      [bind ident(x) [record literal(a) [ [literal(f1) literal(10)] [literal(f2) ident(y)] ] ]]
 						     ]
 				  ]
 				  [nop]
