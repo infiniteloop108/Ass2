@@ -127,7 +127,7 @@ fun {RecPairsComp P1 P2}
 	 of nil then
 	    case Ys
 	    of nil then SoFar
-	    [] Y|Yr then false
+	    else false
 	    end
 	 [] X|Xr then
 	    case Ys
@@ -257,12 +257,12 @@ proc {UnifySAS Exp1 Exp2}
 			   end
 			else raise typemis(Exp1 Exp2) end
 			end
-		     else
+		     [] [procedure FP B RE] then
 			%Exp1 is a procedure
 			case Exp2
 			of literal(Y) then raise typemis(Exp1 Exp2) end
 			[] [record literal(R2) P2] then raise typemis(Exp1 Exp2) end
-			else raise procmis(Exp1 Exp2) end
+			[] [procedure FP2 B2 RE] then raise procmis(Exp1 Exp2) end
 			end
 		     end
 		  end
@@ -316,11 +316,208 @@ end
 
 %=============================================================================================
 %Closure for procedures
-%How do you match a pattern to a procedure?
+
+%=============================================================================================
+%Find list of free variables in the function's Actual Parameters list
 
 declare
-fun {Closure Env P}
-   P
+fun {AddArgList AP Env Bound Free}
+   case AP
+   of nil then Free
+   [] X|Xr then
+      case X
+      of ident(F) then
+	 local NewFree in
+	    NewFree={Dictionary.clone Free}
+	    if {List.member ident(F) Bound} then skip else {Dictionary.put NewFree F {EnvMap F Env} } end
+	    {AddArgList Xr Env Bound NewFree}
+	 end
+      else
+	 {AddArgList Xr Env Bound Free}
+      end
+   end
+end
+
+%=============================================================================================
+%Find list of free variables
+
+declare
+fun {FindFree S Env Bound Free}
+   %S should be a list!
+   case S
+   of X|Y then skip
+   else raise stmerr(S) end
+   end
+   %Now check for statements
+   case S
+   of [nop] then Free
+   [] [localvar ident(X) S1] then
+      {FindFree S1 Env ident(X)|Bound Free}
+   [] [bind X Y] then
+      local NewFree in
+	 NewFree={Dictionary.clone Free}
+	 case X
+	 of ident(F) then if {List.member ident(F) Bound} then skip else {Dictionary.put NewFree F {EnvMap F Env} } end
+	 else skip
+	 end
+	 case Y
+	 of ident(F) then if {List.member ident(F) Bound} then skip else {Dictionary.put NewFree F {EnvMap F Env} } end
+	 else skip
+	 end
+	 NewFree
+      end
+   [] [conditional ident(X) S1 S2] then
+      local NewFree in
+	 NewFree={Dictionary.clone Free}
+	 if {List.member ident(X) Bound} then skip else {Dictionary.put NewFree X {EnvMap X Env} } end
+	 {FindFree S1 Env Bound {FindFree S2 Env Bound NewFree} }
+      end
+   [] [match ident(X) P S1 S2] then
+      local NewFree in
+	 NewFree={Dictionary.clone Free}
+	 if {List.member ident(X) Bound} then skip else {Dictionary.put NewFree X {EnvMap X Env} } end
+	 {FindFree S1 Env Bound {FindFree S2 Env Bound NewFree} }
+      end
+   [] apply|ident(F)|AP then
+      local NewFree in
+	 NewFree={Dictionary.clone Free}
+	 if {List.member ident(F) Bound} then skip else {Dictionary.put NewFree F {EnvMap F Env} } end
+	 {AddArgList AP Env Bound NewFree}
+      end
+   else
+      if S.2 \= nil then {FindFree S.1 Env Bound {FindFree S.2 Env Bound Free} }
+      else {FindFree S.1 Env Bound Free}
+      end
+   end
+end
+
+%=============================================================================================
+%Function to compute closure for procedures
+
+declare
+fun {Closure FP B Env}
+   local Free RE in
+      Free={Dictionary.new}
+      RE={FindFree B Env FP Free}
+      [procedure FP B RE]
+   end
+end
+
+%=============================================================================================
+%Pair matching for record with pattern.
+%Compare features and their values
+
+declare
+fun {RecPairsCompWithVal P1 P2}
+   local RecPairsCompWithValAux in
+      fun {RecPairsCompWithValAux Xs Ys SoFar}
+	 case Xs
+	 of nil then
+	    case Ys
+	    of nil then SoFar
+	    else false
+	    end
+	 [] X|Xr then
+	    case Ys
+	    of nil then false
+	    [] Y|Yr then
+	       case X.1#Y.1
+	       of literal(A)#literal(B) then
+		  if A == B then
+		     case Y.2.1
+		     of literal(N) then
+			case X.2.1
+			of literal(M) then
+			   if M == N then {RecPairsCompWithValAux Xr Yr SoFar}
+			   else {RecPairsCompWithValAux Xr Yr false}
+			   end
+			[] ident(Var) then
+			   %This Variable should be bound to literal(N), else false
+			   local Val in
+			      Val = {GetValFromSAS Var}
+			      case Val
+			      of literal(M) then
+				 if M == N then {RecPairsCompWithValAux Xr Yr SoFar}
+				 else {RecPairsCompWithValAux Xr Yr false}
+				 end
+			      else {RecPairsCompWithValAux Xr Yr false}
+			      end
+			   end
+			end
+		     else {RecPairsCompWithValAux Xr Yr SoFar}
+		     end
+		  else {RecPairsCompWithValAux Xr Yr false}
+		  end
+	       else
+		  raise illegalRecord(Xs) end
+	       end
+	    end
+	 end
+      end
+      {RecPairsCompWithValAux P1 P2 true}
+   end
+end
+
+%=============================================================================================
+%Pattern matching for records
+
+declare
+fun {PatternMatch E1 E2}
+   case E1
+   of [record literal(R1) P1] then
+      case E2
+      of [record literal(R2) P2] then
+	 if R1 \= R2 then false
+	 else
+	    if { RecPairsCompWithVal {SortRecordPairs P1} {SortRecordPairs P2} } == true then true
+	    else false
+	    end
+	 end
+      else
+	 false
+      end
+   else
+      false
+   end
+end
+
+%=============================================================================================
+%Add Pattern to Environment
+%Returns an environment with the variables added
+
+declare
+fun {AddPatternToEnv P Env}
+   case P
+   of H|T then {AddPatternToEnv T {AddPatternToEnv H Env}}
+   [] ident(X) then
+      local NE in
+	 NE={Dictionary.clone Env}
+	 {Dictionary.put NE X {GetID}}
+	 {SASAdd {Dictionary.get NE X}}
+	 NE
+      end
+   else
+      Env
+   end
+end
+
+%=============================================================================================
+%Bind formal parameters to actual parameters
+
+declare
+proc {BindFTOA FP AP}
+   case FP
+   of nil then skip
+   [] F|Fr then
+      case AP
+      of nil then skip
+      [] A|Ar then
+	 {UnifySAS F A}
+	 {BindFTOA Fr Ar}
+      end
+   else
+      skip
+   end
 end
 
 %=============================================================================================
@@ -330,8 +527,8 @@ declare
 proc {Interpret S}
    local Env Run in
       proc {Run S E}
-	 %{Browse S}
-	 %{Browse {Dictionary.entries E}}
+	 {Browse S}
+	 {Browse {Dictionary.entries E}}
          %If S is not a list, then there is a syntax error 
 	 case S
 	 of X|Y then skip
@@ -340,24 +537,74 @@ proc {Interpret S}
          %Try and search for valid syntax, else consider it as a sequence of statements
 	 case S
 	 of [nop] then skip
-	 [] [localvar ident(X) S] then
+	 [] [localvar ident(X) S1] then
 	    local NE in
 	       NE={Dictionary.clone E}
 	       {Dictionary.put NE X {GetID}}
 	       {SASAdd {Dictionary.get NE X}}
-	       {Run S NE}
+	       {Run S1 NE}
 	    end
 	 [] [bind X Y] then
-            %Unify the two expressions in the SAS
-	    {UnifySAS {IdenMap X E} {IdenMap Y E}}   
+            %Unify the two expressions in the SAS (if it is a procedure, compute closure)
+	    local ToBindX ToBindY in
+	       case X
+	       of [procedure FP B] then ToBindX={Closure FP B E}
+	       else ToBindX={IdenMap X E}
+	       end
+	       case Y
+	       of [procedure FP B] then ToBindY={Closure FP B E}
+	       else ToBindY={IdenMap Y E}
+	       end
+	       {UnifySAS ToBindX ToBindY}
+	    end
 	 [] [conditional ident(X) S1 S2] then
 	    local XSAS in
-	       XSAS = {GetValFromSAS {EnvMap E X}}
-       	       %To clarify
+	       XSAS = {GetValFromSAS {EnvMap X E}}
 	       if XSAS==unBOUND then raise unbnd(X) end
 	       else
-		  if XSAS then {Run S1 E}
-		  else {Run S2 E} end
+		  if XSAS==literal(t) then {Run S1 E}
+		  else
+		     if XSAS==literal(f) then {Run S2 E}
+		     else raise wrongtype(X) end
+		     end
+		  end
+		  skip
+	       end  
+	    end
+	 [] [match ident(X) P S1 S2] then
+	     local XSAS in
+	       XSAS = {GetValFromSAS {EnvMap X E}}
+	       if XSAS==unBOUND then raise unbnd(X) end
+	       else
+		  if {PatternMatch XSAS P} == true then
+		     local NE in
+			NE={AddPatternToEnv P E}
+			{UnifySAS XSAS {IdenMap P NE}}
+			{Run S1 NE}
+		     end
+		  else
+		     {Run S2 E}
+		  end
+	       end  
+	     end
+	 [] apply|ident(F)|AP then
+	    local FSAS in
+	       FSAS = {GetValFromSAS {EnvMap F E}}
+	       if FSAS==unBOUND then raise unbnd(F) end
+	       else
+		  case FSAS
+		  of [procedure FP B RE] then
+		     %Check if same parity
+		     if {List.length FP} \= {List.length AP} then raise illarr({List.length FP} {List.length AP}) end
+		     else
+			local NewEnv in
+			   NewEnv={AddPatternToEnv FP RE}
+			   {BindFTOA {IdenMap FP NewEnv} {IdenMap AP E}}
+			   {Run B NewEnv}
+			end
+		     end
+		  else raise cantapp(FSAS) end
+		  end
 	       end
 	    end
 	 else
@@ -385,11 +632,17 @@ try
 				   localvar ident(y) [
 						      [
 						       localvar ident(z) [
-									  [bind ident(x) [record literal(a) [ [literal(f2) ident(x)] [literal(f1) ident(y)] ] ]]
-									  [bind ident(y) literal(30)]
-									  [bind ident(x) [record literal(a) [ [literal(f1) literal(30)] [literal(f2) ident(x)] ] ]]
-									  [bind ident(x) [record literal(a) [ [literal(f1) literal(30)] [literal(f2) ident(z)] ] ]]
-									  [bind ident(x) ident(z)]	  
+									  [bind ident(x) [record literal(a) [ [literal(f2) ident(x)] [literal(f1) ident(z)] ] ]]
+									  [bind ident(y) [record literal(a) [ [literal(f1) ident(z)] [literal(f2) ident(y)] ] ]]
+									  [match ident(x) [record literal(a) [ [literal(f2) ident(q)] [literal(f1) ident(b)] ] ] [nop] [nop] ]
+									  [bind ident(z) [procedure [ident(p) ident(q)] [
+															 
+															 [localvar ident(y) [
+																	     [bind ident(p) ident(y)]
+																	    ] ]
+															[conditional ident(p) [ [bind ident(y) ident(y) ]] [ [apply ident(z) ident(p) literal(40)] ] ]
+															] ] ]
+									  [apply ident(z) literal(t) literal(30)]
 									 ]
 						      ]
 						      [nop]
@@ -408,6 +661,9 @@ catch Err then
    case Err
    of stmerr(X) then {Browse X} {Browse 'Above is not a statement.'}
    [] varndec(X) then {Browse X} {Browse 'Above identifier has not been declared.'}
+   [] cantapp(X) then {Browse X} {Browse 'Above value is not a procedure. Hence cannot be applied'}
+   [] illarr(X Y) then {Browse X} {Browse Y} {Browse 'Illegal Arity. Above do not match.' } 
+   [] wrongtype(X) then {Browse X} {Browse 'Above identifier should be true/false because it is used in if.'}
    [] unbnd(X) then {Browse X} {Browse 'Above variable was unbound at time of usage. Hanging!'} local Hang in  proc {Hang}  {Hang} end  {Hang} end %We do not have paraller programming for now, hence we hang.
    [] typemis(X Y) then {Browse X} {Browse Y} {Browse 'Illegal Unification of the above two values. Type mismatch'}
    [] illass(X Y) then {Browse X} {Browse Y} {Browse 'Illegal Unification of the above two values. Unequal Values'}
