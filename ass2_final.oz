@@ -521,14 +521,32 @@ proc {BindFTOA FP AP}
 end
 
 %=============================================================================================
+%Procedure for printing the SAS given an environment
+
+declare
+proc {DispSAS E}
+   case E
+   of nil then skip
+   [] V#K|Xr then
+      {Browse V}
+      {Browse {GetValFromSAS K}}
+   end
+end
+
+%=============================================================================================
 %Main Interpreter
 
 declare
 proc {Interpret S}
    local Env Run in
       proc {Run S E}
+	 {Browse 'Currently Executing Statement'}
 	 {Browse S}
+	 {Browse 'Environment'}
 	 {Browse {Dictionary.entries E}}
+	 {Browse 'Values in SAS'}
+	 {DispSAS {Dictionary.entries E}}
+	 {Browse '==============================' }
          %If S is not a list, then there is a syntax error 
 	 case S
 	 of X|Y then skip
@@ -627,23 +645,30 @@ try
    %{Interpret [localvar ident(x) [ [nop] [conditional ident(x) [nop] [nop]] ]]}
    %{Interpret [localvar ident(x) [ [localvar ident(x) [  [localvar ident(x) [nop]] [nop] [nop] ] ] [nop]  [nop]] ]}
    {Interpret [
-	       localvar ident(x) [
+	       [localvar ident(x) [
 				  [
 				   localvar ident(y) [
 						      [
 						       localvar ident(z) [
+									  localvar ident(rec) [
+											       localvar ident(pr) [
 									  [bind ident(x) [record literal(a) [ [literal(f2) ident(x)] [literal(f1) ident(z)] ] ]]
-									  [bind ident(y) [record literal(a) [ [literal(f1) ident(z)] [literal(f2) ident(y)] ] ]]
+														   [bind ident(y) [record literal(a) [ [literal(f1) ident(z)] [literal(f2) ident(y)] ] ]]
+														   [bind ident(x) ident(y)]
+														   [bind ident(rec) literal(f)]
 									  [match ident(x) [record literal(a) [ [literal(f2) ident(q)] [literal(f1) ident(b)] ] ] [nop] [nop] ]
-									  [bind ident(z) [procedure [ident(p) ident(q)] [
+									  [bind ident(pr) [procedure [ident(p) ident(q)] [
 															 
 															 [localvar ident(y) [
 																	     [bind ident(p) ident(y)]
 																	    ] ]
-															[conditional ident(p) [ [bind ident(y) ident(y) ]] [ [apply ident(z) ident(p) literal(40)] ] ]
-															] ] ]
-									  [apply ident(z) literal(t) literal(30)]
-									 ]
+															[conditional ident(rec) [ [apply ident(pr) ident(p) literal(40)]] [[bind ident(y) ident(y) ]  ] ]
+															 ] ] ]
+														   [localvar ident(rec) [
+																	 [bind ident(rec) literal(t)]
+									  [apply ident(pr) ident(rec) ident(x)]]
+											      ]]]
+									  ]
 						      ]
 						      [nop]
 						      [nop]
@@ -652,7 +677,8 @@ try
 				  ]
 				  [nop]
 				  [nop]
-				 ]
+				  ]]
+	       [nop]
 	      ]
    }
    %{Interpret [localvar ident(x) [localvar ident(y) [bind ident(x) ident(y)]]]}
