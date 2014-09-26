@@ -323,18 +323,16 @@ end
 declare
 fun {AddArgList AP Env Bound Free}
    case AP
-   of nil then Free
-   [] X|Xr then
-      case X
-      of ident(F) then
-	 local NewFree in
-	    NewFree={Dictionary.clone Free}
-	    if {List.member ident(F) Bound} then skip else {Dictionary.put NewFree F {EnvMap F Env} } end
-	    {AddArgList Xr Env Bound NewFree}
-	 end
-      else
-	 {AddArgList Xr Env Bound Free}
+   of ident(F) then
+      local NewFree in
+	 NewFree={Dictionary.clone Free}
+	 if {List.member ident(F) Bound} then skip else {Dictionary.put NewFree F {EnvMap F Env} } end
+	 NewFree
       end
+   [] H|T then
+      {AddArgList H Env Bound {AddArgList T Env Bound Free}}
+   else
+     Free
    end
 end
 
@@ -354,18 +352,7 @@ fun {FindFree S Env Bound Free}
    [] [localvar ident(X) S1] then
       {FindFree S1 Env ident(X)|Bound Free}
    [] [bind X Y] then
-      local NewFree in
-	 NewFree={Dictionary.clone Free}
-	 case X
-	 of ident(F) then if {List.member ident(F) Bound} then skip else {Dictionary.put NewFree F {EnvMap F Env} } end
-	 else skip
-	 end
-	 case Y
-	 of ident(F) then if {List.member ident(F) Bound} then skip else {Dictionary.put NewFree F {EnvMap F Env} } end
-	 else skip
-	 end
-	 NewFree
-      end
+      {AddArgList X Env Bound {AddArgList Y Env Bound Free}}
    [] [conditional ident(X) S1 S2] then
       local NewFree in
 	 NewFree={Dictionary.clone Free}
@@ -530,6 +517,7 @@ proc {DispSAS E}
    [] V#K|Xr then
       {Browse V}
       {Browse {GetValFromSAS K}}
+      {DispSAS Xr}
    end
 end
 
@@ -678,7 +666,7 @@ try
 				  [nop]
 				  [nop]
 				  ]]
-	       [nop]
+	      [nop]
 	      ]
    }
    %{Interpret [localvar ident(x) [localvar ident(y) [bind ident(x) ident(y)]]]}
