@@ -20,3 +20,9 @@ Procedure application  :  in procedure application we bind the formal parameters
 
 Since the include directive was not working for some reason, we have submitted the code in a single file.
 
+
+Here we call a procedure {Interpret S} on the list of statements provided.
+Unbound variables are denoted by unBOUND in the SAS.
+
+
+The current state of Environment and SAS is displayed at end of each statement.
