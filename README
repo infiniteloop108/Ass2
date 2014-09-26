@@ -1,0 +1,22 @@
+We have implemented the interpreter routines for the following statements:
+
+[nop]  :  We just skip for this instruction
+
+local <x> in <s> end  :  We modify the Environment for this instruction by adding the entry for the variable <x>. The environment is implemented by using a dictionary and a cell variable for maintaining a global counter.
+
+<x> = <y>  :  In this case we unify the environment mappings of both variables in the SAS which is in turn a global dictionary.
+
+The SAS is implemented as a global dictionary. We construct equivalence classes by using a routine similar to union-find disjoint set data structure. We implement unification for records by sorting the literal identifiers of all features and recursively unifying the variables. For closures, we have constructed a set of free variables by a recursive function. We finally store this list for procedure [procedure FP B RE] where FP : formal parameters, B : Body, RE : restricted environment.
+
+<x> = <v>  :  We have implemented it using a modification of union-find disjoint set data structure taking in consideration all checks required.
+
+if-then-else  :  For this we consider the conditional variable <x> to be either literal(t) or literal(f) otherwise we raise an exception.
+
+Pattern matching  :  For this we compare and if successful unify the two records (pattern and variable), and execute the desired statements.
+
+Procedure application  :  in procedure application we bind the formal parameters to actual parameters and then add to it the restricted encironment taken from the value of procedure variable in SAS and call the body.
+
+========================================
+
+Since the include directive was not working for some reason, we have submitted the code in a single file.
+
